@@ -1,3 +1,6 @@
+if _G.SkullV4Loaded then return end
+_G.SkullV4Loaded = true
+
 local VapeLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/59Codings/VapeLib/refs/heads/main/VapeLib.lua"))()
 
 local Players = game:GetService("Players")
@@ -299,7 +302,7 @@ local antiVoidMod = utility:CreateModule({
 	end
 })
 
-local autoWinEnabled = false
+local autoWinEnabled, autoWinSettings = false, {Speed=10,Distance=5,Height=3}
 local autoWinMod = utility:CreateModule({
 	Name = "AutoWin",
 	Function = function(toggle)
@@ -342,7 +345,11 @@ local autoWinMod = utility:CreateModule({
 							local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
 							local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
 							if tRoot and tHum and tHum.Health > 0 then
-								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*10)*5, 3, math.sin(tick()*10)*5), tRoot.Position)
+								if (lastSafePos.Y - tRoot.Position.Y) > 16 then
+									root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
+								else
+									root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*autoWinSettings.Speed)*autoWinSettings.Distance, autoWinSettings.Height, math.sin(tick()*autoWinSettings.Speed)*autoWinSettings.Distance), tRoot.Position)
+								end
 								if flyPos then flyPos = root.Position end
 								auraRemote:FireServer(target)
 							end
@@ -353,6 +360,9 @@ local autoWinMod = utility:CreateModule({
 		end
 	end
 })
+autoWinMod:CreateSlider({Name="AutoWin Speed",Min=1,Max=20,Default=10,Function=function(v) autoWinSettings.Speed=v end})
+autoWinMod:CreateSlider({Name="AutoWin Distance",Min=1,Max=15,Default=5,Function=function(v) autoWinSettings.Distance=v end})
+autoWinMod:CreateSlider({Name="AutoWin Height",Min=1,Max=10,Default=3,Function=function(v) autoWinSettings.Height=v end})
 
 local qot = (queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport))
 local teleportCheck = false
