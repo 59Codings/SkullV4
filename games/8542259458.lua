@@ -70,6 +70,17 @@ local fastFly = movement:CreateModule({
 			fastFlyConn = RunService.RenderStepped:Connect(function(dt)
 				if currentTime >= duration then
 					root.CFrame = CFrame.new(targetPos + Vector3.new(0, yOffset, 0), targetPos + root.CFrame.LookVector)
+					local fPos = root.Position
+					task.delay(0.2, function()
+						if not root then return end
+						local ac = (root.Position - fPos).Magnitude > 5
+						local dist = math.floor((fPos - origin).Magnitude)
+						ui:Notify({
+							Title = "FastFly",
+							Description = "You flew "..dist.." studs away "..(ac and "with" or "without").." getting anticheated!",
+							Duration = 1.5
+						})
+					end)
 					if flyPos then flyPos = root.Position end
 					if fastFlyConn then fastFlyConn:Disconnect() fastFlyConn = nil end
 					if fastFlySettings.AutoToggleOff then
