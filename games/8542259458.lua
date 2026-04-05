@@ -274,6 +274,67 @@ local nukeMod = blatant:CreateModule({
 nukeMod:CreateSlider({Name="Range",Min=1,Max=50,Default=30,Function=function(v) nukeSettings.Range=v end})
 nukeMod:CreateSlider({Name="Nuke Speed",Min=1,Max=100,Default=10,Function=function(v) nukeSettings.Delay=v/100 end})
 
+local antiVoidMod = utility:CreateModule({
+	Name = "AntiVoid",
+	Function = function(toggle)
+		if toggle then
+			task.spawn(function()
+				while toggle and task.wait() do
+					if root and root.Position.Y < -20 then
+						root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
+						if flyPos then flyPos = root.Position end
+						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+					end
+				end
+			end)
+		end
+	end
+})
+
+local autoWinEnabled = false
+local autoWinMod = utility:CreateModule({
+	Name = "AutoWin",
+	Function = function(toggle)
+		autoWinEnabled = toggle
+		if toggle then
+			task.spawn(function()
+				while autoWinEnabled and task.wait() do
+					local eggs = Workspace:FindFirstChild("Eggs")
+					local targetEgg = nil
+					if eggs then
+						for _, egg in pairs(eggs:GetChildren()) do
+							if egg.Name == "Egg" and egg:IsA("Model") and egg.PrimaryPart then
+								local eTeam = egg:GetAttribute("TeamId")
+								local eHealth = egg:GetAttribute("Health") or 100
+								if eTeam ~= lp:GetAttribute("TeamId") and eHealth > 0 then
+									targetEgg = egg
+									break
+								end
+							end
+						end
+					end
+
+					if targetEgg then
+						root.CFrame = CFrame.new(targetEgg.PrimaryPart.Position - Vector3.new(0, 5, 0))
+						if flyPos then flyPos = root.Position end
+						entityRemote:FireServer(targetEgg)
+					else
+						local target = getTarget()
+						if target and root then
+							local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+							if tRoot then
+								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*10)*5, 2, math.sin(tick()*10)*5), tRoot.Position)
+								if flyPos then flyPos = root.Position end
+								auraRemote:FireServer(target)
+							end
+						end
+					end
+				end
+			end)
+		end
+	end
+})
+
 local qot = (queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport))
 local teleportCheck = false
 lp.OnTeleport:Connect(function(State)
