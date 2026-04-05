@@ -202,7 +202,7 @@ local auraMod = blatant:CreateModule({
 					end
 					
 					if auraSettings.Strafe and hum.MoveDirection.Magnitude == 0 then
-						if tRoot.Position.Y < -20 then
+						if (lastSafePos.Y - tRoot.Position.Y) > 16 then
 							root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
 						else
 							strafeAngle = (strafeAngle + (dt * auraSettings.StrafeSpeed)) % (math.pi * 2)
@@ -274,23 +274,23 @@ local nukeMod = blatant:CreateModule({
 nukeMod:CreateSlider({Name="Range",Min=1,Max=50,Default=30,Function=function(v) nukeSettings.Range=v end})
 nukeMod:CreateSlider({Name="Nuke Speed",Min=1,Max=100,Default=10,Function=function(v) nukeSettings.Delay=v/100 end})
 
+local antiVoidEnabled = false
 local antiVoidMod = utility:CreateModule({
 	Name = "AntiVoid",
 	Function = function(toggle)
+		antiVoidEnabled = toggle
 		if toggle then
 			task.spawn(function()
 				local params = RaycastParams.new()
 				params.FilterDescendantsInstances = {lp.Character}
 				params.FilterType = Enum.RaycastFilterType.Blacklist
-				while toggle and task.wait() do
+				while antiVoidEnabled and task.wait() do
 					if root then
-						if root.Position.Y < -20 then
-							local ray = Workspace:Raycast(root.Position, Vector3.new(0, -100, 0), params)
-							if not ray then
-								root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
-								if flyPos then flyPos = root.Position end
-								root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-							end
+						local ray = Workspace:Raycast(root.Position, Vector3.new(0, -50, 0), params)
+						if not ray and (lastSafePos.Y - root.Position.Y) > 16 then
+							root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
+							if flyPos then flyPos = root.Position end
+							root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 						end
 					end
 				end
@@ -330,13 +330,19 @@ local autoWinMod = utility:CreateModule({
 						if flyPos then flyPos = root.Position end
 						entityRemote:FireServer(targetEgg)
 					else
-						local target = getTarget()
+						local target = nil
+						for _, plr in pairs(Players:GetPlayers()) do
+							if plr ~= lp and plr.Character and plr:GetAttribute("TeamId") ~= lp:GetAttribute("TeamId") then
+								local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+								if hum and hum.Health > 0 then target = plr break end
+							end
+						end
 						if target and root then
 							local tChar = target.Character
 							local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
 							local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
 							if tRoot and tHum and tHum.Health > 0 then
-								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*10)*5, 2, math.sin(tick()*10)*5), tRoot.Position)
+								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*10)*5, 3, math.sin(tick()*10)*5), tRoot.Position)
 								if flyPos then flyPos = root.Position end
 								auraRemote:FireServer(target)
 							end
