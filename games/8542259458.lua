@@ -279,11 +279,19 @@ local antiVoidMod = utility:CreateModule({
 	Function = function(toggle)
 		if toggle then
 			task.spawn(function()
+				local params = RaycastParams.new()
+				params.FilterDescendantsInstances = {lp.Character}
+				params.FilterType = Enum.RaycastFilterType.Blacklist
 				while toggle and task.wait() do
-					if root and root.Position.Y < -20 then
-						root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
-						if flyPos then flyPos = root.Position end
-						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+					if root then
+						if root.Position.Y < -20 then
+							local ray = Workspace:Raycast(root.Position, Vector3.new(0, -100, 0), params)
+							if not ray then
+								root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
+								if flyPos then flyPos = root.Position end
+								root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+							end
+						end
 					end
 				end
 			end)
@@ -298,6 +306,7 @@ local autoWinMod = utility:CreateModule({
 		autoWinEnabled = toggle
 		if toggle then
 			task.spawn(function()
+				local lastHealth, lastChange = 0, tick()
 				while autoWinEnabled and task.wait() do
 					local eggs = Workspace:FindFirstChild("Eggs")
 					local targetEgg = nil
@@ -308,6 +317,8 @@ local autoWinMod = utility:CreateModule({
 								local eHealth = egg:GetAttribute("Health") or 100
 								if eTeam ~= lp:GetAttribute("TeamId") and eHealth > 0 then
 									targetEgg = egg
+									if eHealth ~= lastHealth then lastHealth, lastChange = eHealth, tick() end
+									if tick() - lastChange > 3 then targetEgg = nil end
 									break
 								end
 							end
@@ -321,8 +332,10 @@ local autoWinMod = utility:CreateModule({
 					else
 						local target = getTarget()
 						if target and root then
-							local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-							if tRoot then
+							local tChar = target.Character
+							local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
+							local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
+							if tRoot and tHum and tHum.Health > 0 then
 								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*10)*5, 2, math.sin(tick()*10)*5), tRoot.Position)
 								if flyPos then flyPos = root.Position end
 								auraRemote:FireServer(target)
