@@ -106,7 +106,7 @@ local flyMod = movement:CreateModule({
 			flyPos = root.Position
 			normalFlyConn = RunService.RenderStepped:Connect(function(dt)
 				if not root or not hum then return end
-				if fastFlyConn then return end
+				if fastFlyConn or (auraEnabled and auraSettings.Strafe and hum.MoveDirection.Magnitude == 0) then return end
 				local moveDir = hum.MoveDirection
 				local vel = Vector3.new(0, 0, 0)
 				if inputService:IsKeyDown(flySettings.Up) then vel = vel + Vector3.new(0, 1, 0) end
@@ -209,6 +209,7 @@ local auraMod = blatant:CreateModule({
 							local offset = Vector3.new(math.cos(strafeAngle) * auraSettings.StrafeDistance, 0, math.sin(strafeAngle) * auraSettings.StrafeDistance)
 							root.CFrame = CFrame.new(tRoot.Position + offset, Vector3.new(tRoot.Position.X, root.Position.Y, tRoot.Position.Z))
 						end
+						if flyPos then flyPos = root.Position end
 					end
 
 					if tick() - auraLastSwing >= auraSettings.HitTime then
