@@ -48,7 +48,7 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 local fastFlySettings = {Distance=50,Speed=200,StopOnWall=false,Noclip=true,FlyUpDown=false,AutoToggleOff=true}
-local flyConn
+local fastFlyConn
 local fastFly = movement:CreateModule({
 	Name="FastFly",
 	Function=function(toggle, api)
@@ -64,10 +64,11 @@ local fastFly = movement:CreateModule({
 			if result and fastFlySettings.StopOnWall then api:Toggle(false) return end
 			local currentTime, duration = 0, (targetPos - origin).Magnitude / fastFlySettings.Speed
 			local yOffset = 0
-			flyConn = RunService.RenderStepped:Connect(function(dt)
+			fastFlyConn = RunService.RenderStepped:Connect(function(dt)
 				if currentTime >= duration then
 					root.CFrame = CFrame.new(targetPos + Vector3.new(0, yOffset, 0), targetPos + root.CFrame.LookVector)
-					if flyConn then flyConn:Disconnect() flyConn = nil end
+					if flyPos then flyPos = root.Position end
+					if fastFlyConn then fastFlyConn:Disconnect() fastFlyConn = nil end
 					if fastFlySettings.AutoToggleOff then
 						task.spawn(function()
 							while hum and hum.Parent and hum.FloorMaterial == Enum.Material.Air do task.wait() end
@@ -83,9 +84,10 @@ local fastFly = movement:CreateModule({
 				currentTime += dt
 				local newPos = origin:Lerp(targetPos, math.clamp(currentTime/duration,0,1)) + Vector3.new(0, yOffset, 0)
 				root.CFrame = CFrame.new(newPos, newPos + root.CFrame.LookVector)
+				if flyPos then flyPos = root.Position end
 			end)
 		else
-			if flyConn then flyConn:Disconnect() flyConn = nil end
+			if fastFlyConn then fastFlyConn:Disconnect() fastFlyConn = nil end
 			if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
 		end
 	end
@@ -95,15 +97,16 @@ fastFly:CreateSlider({Name="Fly Speed",Min=50,Max=500,Default=200,Function=funct
 fastFly:CreateToggle({Name="Noclip",Default=true,Function=function(v) fastFlySettings.Noclip=v end})
 
 local flySettings = {HSpeed=50,VSpeed=50,Method="CFrame",Up=Enum.KeyCode.Z,Down=Enum.KeyCode.X}
-local flyConn, flyPos
+local normalFlyConn, flyPos
 local flyMod = movement:CreateModule({
 	Name = "Fly",
 	Function = function(toggle)
 		if toggle then
 			if not root then return end
 			flyPos = root.Position
-			flyConn = RunService.RenderStepped:Connect(function(dt)
+			normalFlyConn = RunService.RenderStepped:Connect(function(dt)
 				if not root or not hum then return end
+				if fastFlyConn then return end
 				local moveDir = hum.MoveDirection
 				local vel = Vector3.new(0, 0, 0)
 				if inputService:IsKeyDown(flySettings.Up) then vel = vel + Vector3.new(0, 1, 0) end
@@ -122,7 +125,7 @@ local flyMod = movement:CreateModule({
 				end
 			end)
 		else
-			if flyConn then flyConn:Disconnect() flyConn = nil end
+			if normalFlyConn then normalFlyConn:Disconnect() normalFlyConn = nil end
 			if root then root.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
 		end
 	end
@@ -135,6 +138,13 @@ local auraSettings = {Range=30,SwingRange=30,TeamCheck=true,HitTime=0.25,Combos=
 local auraRemote = game:GetService("ReplicatedStorage"):WaitForChild("Kw8"):WaitForChild("93b2718b-2b2a-4859-b36e-fd4614c7f0c9")
 local auraAnims = {"rbxassetid://8542350607","rbxassetid://8542350607","rbxassetid://8542350607"}
 local auraCombo, auraLastSwing, strafeAngle, auraEnabled = 1, 0, 0, false
+local lastSafePos = Vector3.new(0, 0, 0)
+
+RunService.Heartbeat:Connect(function()
+	if root and hum and hum.FloorMaterial ~= Enum.Material.Air then
+		lastSafePos = root.Position
+	end
+end)
 
 local function getTarget()
 	local myRoot = root
@@ -192,9 +202,13 @@ local auraMod = blatant:CreateModule({
 					end
 					
 					if auraSettings.Strafe and hum.MoveDirection.Magnitude == 0 then
-						strafeAngle = (strafeAngle + (dt * auraSettings.StrafeSpeed)) % (math.pi * 2)
-						local offset = Vector3.new(math.cos(strafeAngle) * auraSettings.StrafeDistance, 0, math.sin(strafeAngle) * auraSettings.StrafeDistance)
-						root.CFrame = CFrame.new(tRoot.Position + offset, Vector3.new(tRoot.Position.X, root.Position.Y, tRoot.Position.Z))
+						if tRoot.Position.Y < -20 then
+							root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
+						else
+							strafeAngle = (strafeAngle + (dt * auraSettings.StrafeSpeed)) % (math.pi * 2)
+							local offset = Vector3.new(math.cos(strafeAngle) * auraSettings.StrafeDistance, 0, math.sin(strafeAngle) * auraSettings.StrafeDistance)
+							root.CFrame = CFrame.new(tRoot.Position + offset, Vector3.new(tRoot.Position.X, root.Position.Y, tRoot.Position.Z))
+						end
 					end
 
 					if tick() - auraLastSwing >= auraSettings.HitTime then
