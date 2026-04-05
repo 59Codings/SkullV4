@@ -309,7 +309,7 @@ local autoWinMod = utility:CreateModule({
 		autoWinEnabled = toggle
 		if toggle then
 			task.spawn(function()
-				local lastHealth, lastChange, autoWinStart = 0, tick(), tick()
+				local lastHealth, lastChange, lastEggSeen = 0, tick(), tick()
 				while autoWinEnabled and task.wait() do
 					local eggs = Workspace:FindFirstChild("Eggs")
 					local targetEgg = nil
@@ -320,6 +320,7 @@ local autoWinMod = utility:CreateModule({
 								local eHealth = egg:GetAttribute("Health") or 100
 								if eTeam ~= lp:GetAttribute("TeamId") and eHealth > 0 then
 									targetEgg = egg
+									lastEggSeen = tick()
 									if eHealth ~= lastHealth then lastHealth, lastChange = eHealth, tick() end
 									if tick() - lastChange > 3 then targetEgg = nil end
 									break
@@ -332,7 +333,7 @@ local autoWinMod = utility:CreateModule({
 						root.CFrame = CFrame.new(targetEgg.PrimaryPart.Position - Vector3.new(0, 5, 0))
 						if flyPos then flyPos = root.Position end
 						entityRemote:FireServer(targetEgg)
-					elseif tick() - autoWinStart > 10 then
+					elseif tick() - lastEggSeen > 5 then
 						local target = nil
 						for _, plr in pairs(Players:GetPlayers()) do
 							if plr ~= lp and plr.Character and plr:GetAttribute("TeamId") ~= lp:GetAttribute("TeamId") then
