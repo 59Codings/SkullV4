@@ -260,20 +260,12 @@ nukeMod:CreateSlider({Name="Range",Min=1,Max=50,Default=30,Function=function(v) 
 nukeMod:CreateSlider({Name="Nuke Speed",Min=1,Max=100,Default=10,Function=function(v) nukeSettings.Delay=v/100 end})
 
 local qot = (queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport))
-local teleportSettings = {Enabled = false}
 local teleportCheck = false
-local teleportMod = utility:CreateModule({
-	Name = "TeleportPersistence",
-	Function = function(toggle)
-		teleportSettings.Enabled = toggle
-	end
-})
-
 lp.OnTeleport:Connect(function(State)
-	if teleportSettings.Enabled and not teleportCheck and qot then
+	if not teleportCheck and qot then
 		teleportCheck = true
 		qot('loadstring(game:HttpGet("https://raw.githubusercontent.com/59Codings/SkullV4/main/games/8542259458.lua"))()')
 	end
 end)
 
-ui:Notify({Title="Script Loaded",Description="Game 8542259458 script is ready.",Duration=5})
+ui:Notify({Title="Script Loaded",Description="Press Right Shift to toggle UI",Duration=5})
