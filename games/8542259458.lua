@@ -309,7 +309,7 @@ local autoWinMod = utility:CreateModule({
 		autoWinEnabled = toggle
 		if toggle then
 			task.spawn(function()
-				local lastHealth, lastChange = 0, tick()
+				local lastHealth, lastChange, autoWinStart = 0, tick(), tick()
 				while autoWinEnabled and task.wait() do
 					local eggs = Workspace:FindFirstChild("Eggs")
 					local targetEgg = nil
@@ -332,12 +332,19 @@ local autoWinMod = utility:CreateModule({
 						root.CFrame = CFrame.new(targetEgg.PrimaryPart.Position - Vector3.new(0, 5, 0))
 						if flyPos then flyPos = root.Position end
 						entityRemote:FireServer(targetEgg)
-					else
+					elseif tick() - autoWinStart > 10 then
 						local target = nil
 						for _, plr in pairs(Players:GetPlayers()) do
 							if plr ~= lp and plr.Character and plr:GetAttribute("TeamId") ~= lp:GetAttribute("TeamId") then
 								local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-								if hum and hum.Health > 0 then target = plr break end
+								if hum and hum.Health > 0 then
+									local tRoot = plr.Character:FindFirstChild("HumanoidRootPart")
+									if tRoot then
+										if (lastSafePos.Y - tRoot.Position.Y) < 16 then
+											target = plr break
+										end
+									end
+								end
 							end
 						end
 						if target and root then
@@ -345,11 +352,7 @@ local autoWinMod = utility:CreateModule({
 							local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
 							local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
 							if tRoot and tHum and tHum.Health > 0 then
-								if (lastSafePos.Y - tRoot.Position.Y) > 16 then
-									root.CFrame = CFrame.new(lastSafePos + Vector3.new(0, 3, 0))
-								else
-									root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*autoWinSettings.Speed)*autoWinSettings.Distance, autoWinSettings.Height, math.sin(tick()*autoWinSettings.Speed)*autoWinSettings.Distance), tRoot.Position)
-								end
+								root.CFrame = CFrame.new(tRoot.Position + Vector3.new(math.cos(tick()*autoWinSettings.Speed)*autoWinSettings.Distance, autoWinSettings.Height, math.sin(tick()*autoWinSettings.Speed)*autoWinSettings.Distance), tRoot.Position)
 								if flyPos then flyPos = root.Position end
 								auraRemote:FireServer(target)
 							end
