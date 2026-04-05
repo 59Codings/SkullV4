@@ -314,17 +314,27 @@ local autoWinMod = utility:CreateModule({
 					local eggs = Workspace:FindFirstChild("Eggs")
 					local targetEgg = nil
 					if eggs then
+						local available = {}
 						for _, egg in pairs(eggs:GetChildren()) do
 							if egg.Name == "Egg" and egg:IsA("Model") and egg.PrimaryPart then
 								local eTeam = egg:GetAttribute("TeamId")
 								local eHealth = egg:GetAttribute("Health") or 100
 								if eTeam ~= lp:GetAttribute("TeamId") and eHealth > 0 then
-									targetEgg = egg
-									lastEggSeen = tick()
-									if eHealth ~= lastHealth then lastHealth, lastChange = eHealth, tick() end
-									if tick() - lastChange > 3 then targetEgg = nil end
-									break
+									table.insert(available, egg)
 								end
+							end
+						end
+						if #available > 0 then
+							targetEgg = available[1]
+							lastEggSeen = tick()
+							local curHealth = targetEgg:GetAttribute("Health") or 100
+							if curHealth ~= lastHealth then
+								lastHealth, lastChange = curHealth, tick()
+							end
+							if tick() - lastChange > 5 then
+								table.remove(available, 1)
+								targetEgg = available[1] or targetEgg
+								lastChange = tick()
 							end
 						end
 					end
